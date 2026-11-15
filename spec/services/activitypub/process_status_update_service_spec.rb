@@ -1067,6 +1067,34 @@ RSpec.describe ActivityPub::ProcessStatusUpdateService do
     end
   end
 
+  context 'when the status removes a quote through an explicit update without changing anything else' do
+    let!(:status) { Fabricate(:status, text: '<p>Hello world</p>', uri: 'https://example.com/statuses/1234', account: Fabricate(:account, domain: 'example.com')) }
+    let(:quoted_account) { Fabricate(:account, domain: 'quoted.example.com') }
+    let(:quoted_status) { Fabricate(:status, account: quoted_account) }
+    let!(:quote) { Fabricate(:quote, status: status, quoted_status: quoted_status, approval_uri: approval_uri, state: :accepted) }
+    let(:approval_uri) { 'https://quoted.example.com/approvals/1' }
+
+    let(:payload) do
+      {
+        '@context': 'https://www.w3.org/ns/activitystreams',
+        id: 'foo',
+        type: 'Note',
+        content: '<p>Hello world</p>',
+        updated: '2021-09-08T22:39:25Z',
+      }
+    end
+
+    it 'removes the quote, creates edit history and sets edit timestamp' do
+      expect { subject.call(status, json, json) }
+        .to change { status.reload.quote }.to(nil)
+
+      expect(status.edits.reload.size)
+        .to eq 2
+      expect(status.reload.edited_at.to_s)
+        .to eq '2021-09-08 22:39:25 UTC'
+    end
+  end
+
   context 'when the status removes an unverified quote through an explicit update' do
     let(:quoted_account) { Fabricate(:account, domain: 'quoted.example.com') }
     let(:quoted_status) { Fabricate(:status, account: quoted_account) }

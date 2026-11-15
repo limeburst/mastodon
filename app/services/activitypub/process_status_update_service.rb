@@ -51,6 +51,7 @@ class ActivityPub::ProcessStatusUpdateService < BaseService
         update_media_attachments!
         update_interaction_policies!
         update_poll!
+        update_quote!
         update_immediate_attributes!
         update_metadata!
         update_counts!
@@ -213,7 +214,6 @@ class ActivityPub::ProcessStatusUpdateService < BaseService
     update_tagged_objects!
     update_mentions!
     update_emojis!
-    update_quote!
   end
 
   def update_tags!
